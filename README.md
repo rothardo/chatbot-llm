@@ -34,8 +34,8 @@ The purpose of this chatbot is to interact with users, understand their queries,
 flowchart TD
     A[User] -->|Interacts| B[Next.js Frontend]
         B -->|Google Auth| C[Google Auth Service]
-        B -->|GitHub Auth| H[GitHub Auth Service]
         B -->|API Requests| D[Node.js Backend]
+        B -->|GitHub Auth| H[GitHub Auth Service]
         D -->|Query| E[PostgreSQL + Prisma]
         D -->|Embeddings| F[Vector Store]
         D -->|LLM Requests| G[Local LLM Service]
