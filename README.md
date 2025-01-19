@@ -33,23 +33,23 @@ The purpose of this chatbot is to interact with users, understand their queries,
 ```mermaid
 flowchart TD
     A[User] -->|Interacts| B[Next.js Frontend]
-    B -->|Google Auth| C[Google Auth Service]
-    B -->|Github Auth| C[Github Auth Service]
-    B -->|API Requests| D[Node.js Backend]
-    E -->|Query| F[PostgreSQL + Prisma]
-    E -->|Embeddings| G[Vector Store]
-    E -->|LLM Requests| H[Local LLM Service]
-    I -->|Response| E
-    J -->|Response| C
-    K -->|Data| E
-    L -->|Similar Context| E
+        B -->|Google Auth| C[Google Auth Service]
+        B -->|GitHub Auth| H[GitHub Auth Service]
+        B -->|API Requests| D[Node.js Backend]
+        D -->|Query| E[PostgreSQL + Prisma]
+        D -->|Embeddings| F[Vector Store]
+        D -->|LLM Requests| G[Local LLM Service]
+        G -->|Response| D
+        D -->|Response| B
+        E -->|Data| D
+        F -->|Similar Context| D
 ```
 
 ## Installation and Usage
 
 1. **Clone the repository**:
     ```bash
-    git clone https://github.com/rothardo/chatbot-llm.git
+    git clone https://github.com/yourusername/chatbot-llm.git
     cd chatbot-llm
     ```
 
