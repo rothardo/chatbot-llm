@@ -33,7 +33,8 @@ The purpose of this chatbot is to interact with users, understand their queries,
 ```mermaid
 flowchart TD
     A[User] -->|Interacts| B[Next.js Frontend]
-    B -->|Google Auth| C[Auth Service]
+    B -->|Google Auth| C[Google Auth Service]
+    B -->|Github Auth| C[Github Auth Service]
     B -->|API Requests| D[Node.js Backend]
     D -->|Query| E[PostgreSQL + Prisma]
     D -->|Embeddings| F[Vector Store]
