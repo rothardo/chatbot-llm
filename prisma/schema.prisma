@@ -1,38 +1,40 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector]
 }
 
 model User {
   id        String   @id @default(uuid())
-  name      String
+  name      String?
   email     String   @unique
   password  String
+  chats     Chat[]
   createdAt DateTime @default(now())
-  chats     Chat[] // Add this line
+  updatedAt DateTime @updatedAt
 }
 
 model Chat {
   id        String    @id @default(uuid())
   userId    String
-  title     String    @default("New Chat")
+  user      User      @relation(fields: [userId], references: [id])
   messages  Message[]
   createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id])
+  updatedAt DateTime  @updatedAt
 }
 
 model Message {
-  id        String   @id @default(uuid())
-  content   String   @db.Text
-  role      String // 'user' or 'assistant'
+  id        String                      @id @default(uuid())
+  content   String                      @db.Text
+  role      String
   chatId    String
-  createdAt DateTime @default(now())
-  chat      Chat     @relation(fields: [chatId], references: [id])
+  chat      Chat                        @relation(fields: [chatId], references: [id])
+  embedding Unsupported("vector(384)")?
+  createdAt DateTime                    @default(now())
+  updatedAt DateTime                    @updatedAt
 }
