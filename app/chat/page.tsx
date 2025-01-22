@@ -1,12 +1,11 @@
-// app/chat/page.tsx
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
 import ChatComponent from "@/components/ChatComponent";
 
 export default async function ChatPage() {
-  const session = await getServerSession();
+  const session = await getServerSession(authOptions);
 
-  // If not logged in, redirect to sign in
   if (!session) {
     redirect("/signin");
   }

@@ -15,7 +15,9 @@
     "prisma:client": "prisma generate",
     "migrate:postgres": "prisma migrate dev",
     "seed:db": "tsx prisma/seed.ts",
-    "prisma:migrate": "prisma migrate dev"
+    "prisma:migrate": "prisma migrate dev",
+    "load-docs": "tsx scripts/load-documents.ts",
+    "migrate:deploy": "prisma migrate deploy"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -54,7 +56,7 @@
     "typescript": "5.0.4"
   },
   "devDependencies": {
-    "prisma": "^4.14.0",
+    "prisma": "^6.2.1",
     "ts-node": "^10.9.1",
     "tsx": "^3.12.7"
   },
