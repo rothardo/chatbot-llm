@@ -22,7 +22,6 @@ async function main() {
       data: {
         name: "John Doe",
         email: "johndoe@example.com",
-        password: hashedPassword,
       },
     });
 

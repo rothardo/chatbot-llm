@@ -1,199 +1,289 @@
+// components/ChatComponent.tsx
 "use client";
+import { useState, useRef, useEffect, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import { Message } from "@prisma/client";
+import { Bot, User, Send, Loader2 } from "lucide-react";
+import { Button } from "./button";
+import { ChatSidebar } from "./ChatSidebar";
+import { useSession } from "next-auth/react";
+import { ChatHeader } from "@/components/chat-header";
+import { Plus } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import { useState, useRef, useEffect } from "react";
-import { Send, Plus, Loader2 } from "lucide-react";
-import { signOut } from "next-auth/react";
-import { ThemeToggle } from "./ThemeToggles";
-import { ChatMessage } from "./ChatMessage";
-
-interface Message {
-  id: string;
-  content: string;
-  role: "user" | "assistant";
-}
-
-const Header = ({ onNewChat }: { onNewChat: () => void }) => (
-  <header className="sticky top-0 z-50 flex items-center justify-between h-14 px-4 border-b bg-white dark:bg-gray-900 dark:border-gray-800">
-    <div className="flex items-center space-x-4">
-      <button
-        onClick={onNewChat}
-        className="flex items-center gap-2 px-3 py-1 text-sm rounded-md text-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 dark:text-gray-200"
-      >
-        <Plus size={16} />
-        New Chat
-      </button>
-    </div>
-    <div className="flex items-center space-x-4">
-      <ThemeToggle />
-      <button
-        onClick={() => signOut({ callbackUrl: "/signin" })}
-        className="px-3 py-1 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
-      >
-        Sign Out
-      </button>
-    </div>
-  </header>
-);
-
-const LoadingIndicator = () => (
-  <div className="px-4 py-8 w-full bg-gray-50 dark:bg-gray-800/50">
-    <div className="max-w-3xl mx-auto flex items-center space-x-4">
-      <Loader2 className="w-6 h-6 animate-spin text-gray-500 dark:text-gray-400" />
-      <p className="text-gray-500 dark:text-gray-400">AI is thinking...</p>
-    </div>
-  </div>
-);
-
-const MessageInput = ({
-  input,
-  setInput,
-  handleSubmit,
-  isLoading,
-}: {
-  input: string;
-  setInput: (value: string) => void;
-  handleSubmit: (e: React.FormEvent) => void;
-  isLoading: boolean;
-}) => (
-  <div className="border-t dark:border-gray-800 bg-white dark:bg-gray-900 px-4 py-4">
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-      <div className="relative flex items-center">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Send a message..."
-          className="flex-1 p-3 pr-12 rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:placeholder-gray-400"
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="absolute right-2 p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 disabled:opacity-50"
-        >
-          <Send size={20} />
-        </button>
-      </div>
-    </form>
-  </div>
-);
-
-export default function ChatComponent({ userId }: { userId: string }) {
+export default function ChatComponent() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [currentChat, setCurrentChat] = useState<string | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [streamingContent, setStreamingContent] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  const { data: session } = useSession();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
-
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: input,
-      role: "user",
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setIsLoading(true);
-
+  async function createIndexAndEmbeddings() {
     try {
-      const response = await fetch("/api/chat", {
+      const result = await fetch("/api/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: input,
-          userId,
+          chatId: currentChat,
+        }),
+      });
+      const json = await result.json();
+      console.log("result: ", json);
+      alert("Embeddings created successfully!");
+    } catch (err) {
+      console.log("err:", err);
+      alert("Error creating embeddings");
+    }
+  }
+
+  async function sendQuery(e: FormEvent) {
+    e.preventDefault();
+    if (!input.trim() || !currentChat) return;
+
+    setLoading(true);
+    setStreamingContent("");
+
+    try {
+      await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: input,
+          chatId: currentChat,
+          role: "user",
         }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "user",
+          content: input,
+          createdAt: new Date(),
+          chatId: currentChat,
+        } as Message,
+      ]);
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No reader available");
+      const response = await fetch("/api/stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: input,
+          chatId: currentChat,
+        }),
+      });
 
-      let assistantMessage: Message = {
-        id: Date.now().toString(),
-        content: "",
-        role: "assistant",
-      };
+      if (!response.body) throw new Error("No response body");
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      let accumulatedContent = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = new TextDecoder().decode(value);
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(5);
-            if (data === "[DONE]") continue;
-
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.chunk) {
-                assistantMessage.content += parsed.chunk;
-                setMessages((prev) =>
-                  prev.map((msg) =>
-                    msg.id === assistantMessage.id
-                      ? { ...msg, content: assistantMessage.content }
-                      : msg
-                  )
-                );
-              }
-            } catch (e) {
-              console.error("Error parsing chunk:", e);
-            }
-          }
-        }
+        const chunk = decoder.decode(value);
+        accumulatedContent += chunk;
+        setStreamingContent(accumulatedContent);
       }
-    } catch (error) {
-      console.error("Chat error:", error);
+
+      await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: accumulatedContent,
+          chatId: currentChat,
+          role: "assistant",
+        }),
+      });
+
       setMessages((prev) => [
         ...prev,
         {
-          id: Date.now().toString(),
-          content: "I apologize, but I encountered an error. Please try again.",
           role: "assistant",
-        },
+          content: accumulatedContent,
+          createdAt: new Date(),
+          chatId: currentChat,
+        } as Message,
       ]);
+
+      setInput("");
+    } catch (err) {
+      console.log("err:", err);
+      alert("Error sending message");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
+      setStreamingContent("");
+    }
+  }
+
+  const createNewChat = async () => {
+    if (!session?.user?.id) return;
+
+    try {
+      const response = await fetch("/api/chat/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: session.user.id }),
+      });
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      console.log("Chat created:", data);
+      setCurrentChat(data.id);
+      setShowUpload(true);
+      setMessages([]);
+    } catch (error) {
+      console.error("Error creating chat:", error);
+      alert("Error creating new chat");
     }
   };
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-gray-900">
-      <Header onNewChat={() => setMessages([])} />
-      <div className="flex-1 overflow-y-auto">
-        {messages.map((message) => (
-          <ChatMessage key={message.id} message={message} />
-        ))}
-        {isLoading && <LoadingIndicator />}
-        <div ref={messagesEndRef} />
+    <div className="flex h-screen bg-background text-foreground">
+      {session?.user?.id && (
+        <ChatSidebar
+          userId={session.user.id}
+          currentChat={currentChat}
+          setCurrentChat={setCurrentChat}
+          onNewChat={createNewChat}
+        />
+      )}
+
+      <div className="flex-1 flex flex-col">
+        <ChatHeader />
+
+        {!currentChat ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Button
+              onClick={createNewChat}
+              leftIcon={<Plus className="h-4 w-4" />}
+            >
+              Start New Chat
+            </Button>
+          </div>
+        ) : (
+          <>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`flex items-start space-x-3 ${
+                    message.role === "user" ? "justify-end" : "justify-start"
+                  }`}
+                >
+                  {message.role !== "user" && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={`flex-1 max-w-[80%] p-4 rounded-lg ${
+                      message.role === "user"
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">
+                      {message.content}
+                    </p>
+                  </div>
+                  {message.role === "user" && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={session?.user?.image || ""} />
+                      <AvatarFallback>
+                        {session?.user?.name?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
+                </div>
+              ))}
+
+              {streamingContent && (
+                <div className="flex items-start space-x-3">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 max-w-[80%] p-4 rounded-lg bg-muted">
+                    <p className="text-sm whitespace-pre-wrap">
+                      {streamingContent}
+                      <span className="animate-pulse">▋</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {loading && !streamingContent && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {showUpload && (
+              <div className="p-4 border-t border-gray-200">
+                <div className="flex justify-between items-center">
+                  <input
+                    type="file"
+                    className="flex-1"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const formData = new FormData();
+                        formData.append("file", file);
+                        formData.append("chatId", currentChat);
+
+                        try {
+                          await fetch("/api/upload", {
+                            method: "POST",
+                            body: formData,
+                          });
+
+                          await createIndexAndEmbeddings();
+                          setShowUpload(false);
+                        } catch (error) {
+                          console.error("Error:", error);
+                          alert("Error uploading file");
+                        }
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={sendQuery} className="p-4 border-t">
+              <div className="flex space-x-4">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Type your message..."
+                  className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-2 bg-background"
+                  disabled={loading}
+                />
+                <Button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  rightIcon={<Send className="h-4 w-4" />}
+                >
+                  Send
+                </Button>
+              </div>
+            </form>
+          </>
+        )}
       </div>
-      <MessageInput
-        input={input}
-        setInput={setInput}
-        handleSubmit={handleSubmit}
-        isLoading={isLoading}
-      />
     </div>
   );
 }

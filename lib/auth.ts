@@ -28,20 +28,16 @@ export const authOptions: NextAuthOptions = {
       }
 
       try {
-        const hashedPassword = await bcrypt.hash(
-          Math.random().toString(36),
-          10
-        );
-
-        await prisma.user.upsert({
+        const user = await prisma.user.upsert({
           where: { email: profile.email },
           create: {
             email: profile.email,
             name: profile.name ?? "Unknown",
-            password: hashedPassword,
+            image: profile.image ?? null,
           },
           update: {
             name: profile.name ?? "Unknown",
+            image: profile.image ?? null,
           },
         });
         return true;
