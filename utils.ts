@@ -1,4 +1,5 @@
 // utils.ts
+import path from "path";
 import { Document } from "@langchain/core/documents";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import { loadQAStuffChain } from "langchain/chains";
@@ -40,7 +41,7 @@ const cleanMetadata = (
 export const queryPineconeVectorStoreAndQueryLLM = async (
   client: Pinecone,
   indexName: string,
-  question: string
+  { query }: { query: string } // Changed to destructure query from input object
 ) => {
   console.log("Querying Pinecone vector store...");
 
@@ -48,7 +49,7 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
 
   try {
     // Create query embedding
-    const queryEmbedding = await embeddings.embedQuery(question);
+    const queryEmbedding = await embeddings.embedQuery(query);
 
     // Query Pinecone
     const queryResponse = await index.query({
@@ -78,7 +79,7 @@ export const queryPineconeVectorStoreAndQueryLLM = async (
 
       const result = await chain.call({
         input_documents: docs,
-        question: question,
+        question: query, // Changed from 'query' to match the chain's expected input
       });
 
       return result.text;
@@ -133,6 +134,13 @@ export const createPineconeIndex = async (
   }
 };
 
+function sanitizeVectorId(str: string): string {
+  return str
+    .replace(/[^a-zA-Z0-9-_]/g, "_") // Replace non-alphanumeric chars with underscore
+    .replace(/_{2,}/g, "_") // Replace multiple underscores with single
+    .slice(0, 64); // Limit length to safe value
+}
+
 // Update Pinecone Index
 export const updatePinecone = async (
   client: Pinecone,
@@ -159,15 +167,23 @@ export const updatePinecone = async (
         chunks.map((chunk) => String(chunk.pageContent))
       );
 
-      const records = chunks.map((chunk, i) => ({
-        id: `${doc.metadata.source}_${i}_${Date.now()}`,
-        values: embeddingsArrays[i],
-        metadata: {
-          ...cleanMetadata(chunk.metadata),
-          pageContent: String(chunk.pageContent),
-          source: String(doc.metadata.source),
-        },
-      }));
+      const records = chunks.map((chunk, i) => {
+        const vectorId = sanitizeVectorId(
+          `${path.basename(doc.metadata.source)}_${i}_${Date.now()}`
+        );
+
+        return {
+          id: vectorId,
+          values: embeddingsArrays[i],
+          metadata: {
+            ...cleanMetadata(chunk.metadata),
+            pageContent: String(chunk.pageContent),
+            source: String(doc.metadata.source),
+            chunk: i,
+            total_chunks: chunks.length,
+          },
+        };
+      });
 
       const batchSize = 100;
       for (let i = 0; i < records.length; i += batchSize) {
