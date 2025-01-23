@@ -1,7 +1,4 @@
 
-### Updated `CONTRIBUTION.md`
-
-```markdown
 # Contributing to Chatbot LLM
 
 We welcome contributions to the Chatbot LLM project! By contributing, you will help enhance the functionality of the app and make it more useful to everyone. Below are the steps and guidelines to ensure smooth collaboration.
