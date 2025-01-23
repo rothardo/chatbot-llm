@@ -70,21 +70,21 @@ flowchart TD
     pnpm install
     ```
 
+3. **Prisma Commands**
 
-3. Prisma Commands
+    To set up the database and ensure everything works smoothly, you will need to run the following Prisma commands.
 
-To set up the database and ensure everything works smoothly, you will need to run the following Prisma commands.
-
-a. **Run database migrations**:
-    ```bash
+    a. **Run database migrations**:
+   
     pnpm run migrate:postgres
-    ```
-b. **Seed the database** (optional, if your project requires initial data):
-    ```bash
+   
+   
+    b. **Seed the database** (optional, if your project requires initial data):
+   
     pnpm run seed:db
     ```
 
-These commands will ensure that your database is set up correctly, and any necessary initial data is populated.
+    These commands will ensure that your database is set up correctly, and any necessary initial data is populated.
 
 4. **Run the development server**:
     ```bash
