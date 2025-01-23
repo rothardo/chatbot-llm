@@ -12,12 +12,20 @@ export async function GET() {
     }
 
     const chats = await prisma.chat.findMany({
-      where: { userId: session.user.id },
-      orderBy: { createdAt: "desc" },
+      where: {
+        userId: session.user.id,
+      },
       include: {
         messages: {
-          orderBy: { createdAt: "asc" },
+          orderBy: {
+            createdAt: "desc",
+          },
+          take: 1, // Get only the last message
         },
+        files: true, // Include files
+      },
+      orderBy: {
+        updatedAt: "desc",
       },
     });
 
