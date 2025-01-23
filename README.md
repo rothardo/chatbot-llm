@@ -75,12 +75,12 @@ flowchart TD
     To set up the database and ensure everything works smoothly, you will need to run the following Prisma commands.
 
     a. **Run database migrations**:
-   
+   ```bash
     pnpm run migrate:postgres
-   
+   ```
    
     b. **Seed the database** (optional, if your project requires initial data):
-   
+   ```bash
     pnpm run seed:db
     ```
 
