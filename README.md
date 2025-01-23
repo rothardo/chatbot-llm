@@ -1,4 +1,3 @@
-```markdown
 # Chatbot LLM
 
 This project is a chatbot application utilizing a Large Language Model (LLM) with authentication and authorization from Google. The application makes use of various technologies to provide a seamless, secure, and intelligent user experience.
@@ -108,4 +107,3 @@ This application leverages cutting-edge technologies to deliver a conversational
 ---
 
 Contributions are most welcome! Please head to the [Contribution Guide](CONTRIBUTION.md) for more details on how to contribute.
-```
