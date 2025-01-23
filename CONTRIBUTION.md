@@ -53,11 +53,11 @@ These commands will ensure that your database is set up correctly, and any neces
 
 When creating a PR, please follow this format:
 
-```
+```bash
 fix: Fix issue where user login fails due to API error
 
 feat: Add functionality to support multiple LLM providers (e.g., Ollama, OpenAI)
-
+```
 ## What does this PR do?
 
 Explain what changes are being made, the reasoning behind those changes, and what problem they solve.
@@ -69,7 +69,6 @@ Describe how to test the changes (e.g., steps for testing or screenshots if appl
 ## Any related issues or PRs?
 
 List any issues or PRs that this PR addresses or is related to.
-```
 
 ## Best Practices for PRs
 
@@ -83,6 +82,3 @@ List any issues or PRs that this PR addresses or is related to.
 Feel free to use any LLM service that suits your needs. Ollama is used in this project by default, but you can switch to another provider or service if desired.
 
 Thank you for contributing! Together, we can make this project even better.
-```
-
----
